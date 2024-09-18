@@ -1,0 +1,93 @@
+import scapy.all as scapy
+from datetime import datetime
+
+# Define the sniffing function
+def sniff_packets(iface='wlan0'):
+    """
+    Sniff packets on the specified interface.
+    """
+    print(f"Sniffing on interface {iface}...")
+    scapy.sniff(iface=iface, count=100, prn=process_packet)
+
+# Define the packet processing function
+def process_packet(packet):
+    """
+    Process each sniffed packet.
+    """
+    if packet.haslayer(scapy.IP):
+        src_ip = packet[scapy.IP].src
+        dst_ip = packet[scapy.IP].dst
+        print(f"\nPacket Captured at {datetime.now()}")
+        print(f"IP Packet: {src_ip} -> {dst_ip}")
+        print(f"IP Protocol: {packet[scapy.IP].proto}")
+        print(f"IP TTL: {packet[scapy.IP].ttl}")
+        print(f"IP Length: {packet[scapy.IP].len}")
+        print(f"IP Fragmentation Flags: {packet[scapy.IP].flags}")
+
+        # TCP Packet Analysis
+        if packet.haslayer(scapy.TCP):
+            src_port = packet[scapy.TCP].sport
+            dst_port = packet[scapy.TCP].dport
+            print(f"  TCP Packet:")
+            print(f"  Source Port: {src_port}")
+            print(f"  Destination Port: {dst_port}")
+            print(f"  TCP Flags: {packet[scapy.TCP].flags}")
+            print(f"  TCP Sequence Number: {packet[scapy.TCP].seq}")
+            print(f"  TCP Acknowledgment Number: {packet[scapy.TCP].ack}")
+            print(f"  TCP Window Size: {packet[scapy.TCP].window}")
+            print(f"  TCP Urgent Pointer: {packet[scapy.TCP].urgptr}")
+
+            # DNS Packet Analysis
+            if dst_port == 53 or src_port == 53:
+                if packet.haslayer(scapy.DNS):
+                    print(f"  DNS Packet:")
+                    print(f"  DNS Query: {packet[scapy.DNS].qd}")
+                    print(f"  DNS Response: {packet[scapy.DNS].an}")
+
+            # HTTP Packet Analysis
+            if dst_port == 80 or src_port == 80:
+                if packet.haslayer(scapy.Raw):
+                    print(f"  HTTP Packet:")
+                    try:
+                        http_payload = packet[scapy.Raw].load.decode('utf-8')
+                        print(f"  HTTP Method: {http_payload.split(' ')[0]}")
+                        print(f"  HTTP URL: {http_payload.split(' ')[1]}")
+                    except:
+                        print(f"  HTTP Payload: {packet[scapy.Raw].load}")
+
+            # TLS/SSL Packet Analysis
+            if dst_port == 443 or src_port == 443:
+                if packet.haslayer(scapy.TLS):
+                    print(f"  TLS Packet:")
+                    print(f"  TLS Version: {packet[scapy.TLS].version}")
+                    print(f"  TLS Cipher Suite: {packet[scapy.TLS].cipher}")
+
+        # UDP Packet Analysis
+        elif packet.haslayer(scapy.UDP):
+            src_port = packet[scapy.UDP].sport
+            dst_port = packet[scapy.UDP].dport
+            print(f"  UDP Packet:")
+            print(f"  Source Port: {src_port}")
+            print(f"  Destination Port: {dst_port}")
+            print(f"  UDP Length: {packet[scapy.UDP].len}")
+            print(f"  UDP Checksum: {packet[scapy.UDP].chksum}")
+
+        # ICMP Packet Analysis
+        elif packet.haslayer(scapy.ICMP):
+            print(f"  ICMP Packet:")
+            print(f"  ICMP Type: {packet[scapy.ICMP].type}")
+            print(f"  ICMP Code: {packet[scapy.ICMP].code}")
+            print(f"  ICMP Checksum: {packet[scapy.ICMP].chksum}")
+
+        # Raw Packet Payload
+        if packet.haslayer(scapy.Raw):
+            print(f"  Payload: {packet[scapy.Raw].load}")
+
+        # Additional Information
+        print("  Additional Information:")
+        print(f"  Packet Length: {len(packet)}")
+        print(f"  Packet Hexdump: {packet.hexdump()}")
+
+# Run the sniffer
+if __name__ == "__main__":
+    sniff_packets()
